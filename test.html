@@ -1,0 +1,107 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+	<title>Interview question</title>
+</head>
+<body>
+
+
+	<script type="text/javascript" src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.11.1.min.js"></script>
+	<script type="text/javascript">
+
+	$.get('http://shopicruit.myshopify.com/products.json?limit=250', function(ddd) {
+		
+		//get filtered list of computers and keyboards
+			
+
+			/*** 
+				For some reason the ?product_type=Computer and filters were not working properly, I probably misread documentations 
+			***/
+
+		var pc = ddd.products.filter(function(a) {
+			return a.product_type == "Computer";
+		}),
+		keyboard = ddd.products.filter(function(a) {
+			return a.product_type == "Keyboard";
+		}),
+
+		pcNew = [], keyboardNew = [];
+
+		//as each product has a couple variants (ex. chg in color), expand this out to give each variant it's own spot in the xNew array 
+
+		pc.forEach(function(g) {
+			g.variants.forEach(function(h) {
+				var temp = $.extend(true, {}, g); //gotta make deep copy of object
+				delete temp.variants;
+				temp.plusData = h;
+				pcNew.push(temp);
+			});
+		});
+		keyboard.forEach(function(g) {
+			g.variants.forEach(function(h) {
+				var temp = $.extend(true, {}, g); //gotta make deep copy of object
+				delete temp.variants;
+				temp.plusData = h;
+				keyboardNew.push(temp);
+			});
+		});
+
+		//sort by price
+		pcNew = pcNew.sort(function(a, b) {
+			return parseFloat(a.plusData.price) - parseFloat(b.plusData.price);
+		});
+		keyboardNew = keyboardNew.sort(function(a, b) {
+			return parseFloat(a.plusData.price) - parseFloat(b.plusData.price);
+		});
+
+		//now create shopping list
+		var maxPrice = 1000;
+
+		//two lists so we can iterate through the shortest one
+			//not too bad for memory since javascript passes objs by ref
+		var longList = keyboardNew.length > pcNew.length? keyboardNew: pcNew;
+		var shortList = keyboardNew.length <= pcNew.length? keyboardNew: pcNew;
+
+
+		var shoppingList1 = [], shoppingList2 = [];
+
+		for (var i = (shortList.length - 1); i > 0 && maxPrice>=0; i--) {
+			
+			//get next cheapest items
+
+			var lEl = longList.shift();
+			var sEl = shortList.shift();
+			var totPrice = parseFloat(lEl.plusData.price) + parseFloat(sEl.plusData.price);
+
+			// add if can purchase both
+			if (maxPrice - totPrice >= 0) {
+				shoppingList1.push(lEl);
+				shoppingList2.push(sEl);
+				maxPrice -= totPrice;
+			};
+		};
+
+		console.log('Leftover price is', maxPrice); //for reference :)
+
+		var finalList = shoppingList1.concat(shoppingList2);
+
+
+		//----------ignore-----------//
+				//just checking if api gives all weights in grams
+					// var differentWeights = []; finalList.forEach(function (g) {
+					// 	if(!(g.plusData.grams)) differentWeights.push(g);
+					// });
+					// console.log(differentWeights);
+		//----------ignore-----------//
+
+		//get total weight & output
+		var totalWeight = finalList.reduce(function(runner, curr) {
+			return runner + curr.plusData.grams;
+		}, 0);
+		document.write("<p style='text-align:center;margin-top:60px;'>Total weight of items is: <b>" + (totalWeight/1000) + " kg</b></p>");
+
+		//dunne
+	});
+	</script>
+</body>
+</html>
